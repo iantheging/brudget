@@ -1,28 +1,27 @@
 import firebase from "../firebase";
 
-const db = firebase.collection("/tutorials");
+const db = firebase.ref("/tutorials");
 
-const getAll = () => {
-    return db;
-};
+class TutorialDataService {
+    getAll() {
+        return db;
+    }
 
-const create = (data) => {
-    return db.add(data);
-};
+    create(tutorial) {
+        return db.push(tutorial);
+    }
 
-const update = (id, value) => {
-    return db.doc(id).update(value);
-};
+    update(key, value) {
+        return db.child(key).update(value);
+    }
 
-const remove = (id) => {
-    return db.doc(id).delete();
-};
+    delete(key) {
+        return db.child(key).remove();
+    }
 
-const TutorialService = {
-    getAll,
-    create,
-    update,
-    remove
-};
+    deleteAll() {
+        return db.remove();
+    }
+}
 
-export default TutorialService;
+export default new TutorialDataService();

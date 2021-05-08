@@ -1,83 +1,111 @@
-import React, { useState, useCollection } from "react";
+import React, { Component } from "react";
 import TutorialDataService from "../services/TutorialServices";
+
 import Tutorial from "./Tutorial";
 
-const TutorialsList = () => {
-    //const [tutorials, setTutorials] = useState([]);
-    const [currentTutorial, setCurrentTutorial] = useState(null);
-    const [currentIndex, setCurrentIndex] = useState(-1);
+export default class TutorialsList extends Component {
+    constructor(props) {
+        super(props);
+        this.refreshList = this.refreshList.bind(this);
+        this.setActiveTutorial = this.setActiveTutorial.bind(this);
+        this.removeAllTutorials = this.removeAllTutorials.bind(this);
+        this.onDataChange = this.onDataChange.bind(this);
 
-    const [tutorials, loading, error] = useCollection(TutorialDataService.getAll().orderBy("title", "asc"));
+        this.state = {
+            tutorials: [],
+            currentTutorial: null,
+            currentIndex: -1,
+        };
+    }
 
-    // const onDataChange = (items) => {
-    //     let tutorials = [];
+    componentDidMount() {
+        TutorialDataService.getAll().on("value", this.onDataChange);
+    }
 
-    //     items.docs.forEach((item) => {
-    //         let id = item.id;
-    //         let data = item.data();
-    //         tutorials.push({
-    //             id: id,
-    //             title: data.title,
-    //             description: data.description,
-    //             published: data.published,
-    //         });
-    //     });
+    componentWillUnmount() {
+        TutorialDataService.getAll().off("value", this.onDataChange);
+    }
 
-    //     setTutorials(tutorials);
-    // };
+    onDataChange(items) {
+        let tutorials = [];
 
-    // useEffect(() => {
-    //     const unsubscribe = TutorialDataService.getAll().orderBy("title", "asc").onSnapshot(onDataChange);
-    //     return () => unsubscribe();
-    // }, []);
-
-    const refreshList = () => {
-        setCurrentTutorial(null);
-        setCurrentIndex(-1);
-    };
-
-    const setActiveTutorial = (tutorial, index) => {
-        const { title, description, published } = tutorial;
-
-        setCurrentTutorial({
-            id: tutorial.id,
-            title,
-            description,
-            published,
+        items.forEach((item) => {
+            let key = item.key;
+            let data = item.val();
+            tutorials.push({
+                key: key,
+                title: data.title,
+                description: data.description,
+                published: data.published,
+            });
         });
 
-        setCurrentIndex(index);
-    };
+        this.setState({
+            tutorials: tutorials,
+        });
+    }
 
-    return (
-        <div className="list row">
-            <div className="col-md-6">
-                <h4>Tutorials List</h4>
-                
-                <ul className="list-group">
-                    { tutorials && tutorials.map((tutorial, index) =>
-                        <li
-                            className={"list-group-item " + (index === currentIndex ? "active" : "")}
-                            onClick={() => setActiveTutorial(tutorial, index)}
-                            key={tutorial.id}
-                        >
-                            { tutorial.title }
-                        </li>
+    refreshList() {
+        this.setState({
+            currentTutorial: null,
+            currentIndex: -1,
+        });
+    }
+
+    setActiveTutorial(tutorial, index) {
+        this.setState({
+            currentTutorial: tutorial,
+            currentIndex: index,
+        });
+    }
+
+    removeAllTutorials() {
+        TutorialDataService.deleteAll()
+            .then(() => {
+                this.refreshList();
+            })
+            .catch((e) => {
+                console.log(e)
+            });
+    }
+
+    render() {
+        const { tutorials, currentTutorial, currentIndex } = this.state;
+
+        return (
+            <div className="list row">
+                <div className="col-md-6">
+                    <h4>Tutorials List</h4>
+                    <ul className="list-group">
+                        {tutorials &&
+                            tutorials.map((tutorial, index) => (
+                                <li
+                                    className={
+                                            "list-group-item " +
+                                            (index === currentIndex ? "active" : "")
+                                    }
+                                    onClick={() => this.setActiveTutorial(tutorial, index)}
+                                    key={index}
+                                >
+                                    {tutorial.title}
+                                </li>
+                            ))
+                        }
+                    </ul>
+
+                    <button className="m-3 btn btn-sm btn-danger" onClick={this.removeAllTutorials}>Remove All</button>
+                </div>
+                <div className="col-md-6">
+                    {currentTutorial ? (
+                        <Tutorial tutorial={currentTutorial} refreshList={this.refreshList} />
+                    ) : (
+                        <div>
+                            <br />
+                            <p>Please click on a Tutorial...</p>
+                        </div>
                     )}
-                </ul>
+                </div>
             </div>
-            <div className="col-md-6">
-                {currentTutorial ? (
-                    <Tutorial tutorial={currentTutorial} refreshList={refreshList} />
-                ) : (
-                    <div>
-                        <br/>
-                        <p>Please click on a Tutorial...</p>
-                    </div>
-                )}
-            </div>
-        </div>
-    );
-};
-
-export default TutorialsList;
+        );
+    }
+}

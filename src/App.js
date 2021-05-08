@@ -28,7 +28,7 @@ function App() {
       </nav>
 
       <div className="container mt-3">
-        <h2>React Hooks Firestore example</h2>
+        <h2>React CRUD Firestore example</h2>
         <Switch>
           <Route exact path={["/", "/tutorials"]} component={TutorialsList}></Route>
           <Route exact path="/add" component={AddTutorial}></Route>
